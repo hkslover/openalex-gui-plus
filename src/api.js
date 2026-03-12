@@ -113,12 +113,132 @@ const api = (function () {
         return resp.data;
     }
 
-    const importWorksToZotero = async function(openalexIds, settings) {
+    const importWorksToZotero = async function(openalexIds, settings, options = {}) {
         const resp = await axios.post(getBackendUrl('/zotero/import'), {
             openalexIds,
             settings,
+            extraNotesById: options.extraNotesById || {},
         });
         return resp.data;
+    }
+
+    const lookupJournalRanking = async function(issns, settings, config) {
+        const resp = await axios.post(getBackendUrl('/journal-ranking/lookup'), {
+            issns,
+            settings,
+        }, config);
+        return resp.data;
+    }
+
+    const generateLiteratureBrief = async function(work, settings, config) {
+        const resp = await axios.post(getBackendUrl('/literature-brief/generate'), {
+            work,
+            settings,
+        }, config);
+        return resp.data;
+    }
+
+    const testLiteratureBrief = async function(settings, config) {
+        const resp = await axios.post(getBackendUrl('/literature-brief/test'), {
+            settings,
+        }, config);
+        return resp.data;
+    }
+
+    const streamLiteratureBrief = async function(work, settings, handlers = {}, signal) {
+        const response = await fetch(getBackendUrl('/literature-brief/stream'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ work, settings }),
+            signal,
+        });
+
+        if (!response.ok || !response.body) {
+            const message = await response.text();
+            throw new Error(message || `HTTP ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let eventName = 'message';
+        let dataLines = [];
+
+        const findBoundary = (value) => {
+            const lfBoundary = value.indexOf('\n\n');
+            const crlfBoundary = value.indexOf('\r\n\r\n');
+
+            if (lfBoundary === -1) return crlfBoundary;
+            if (crlfBoundary === -1) return lfBoundary;
+            return Math.min(lfBoundary, crlfBoundary);
+        };
+
+        const getBoundaryLength = (value, index) => {
+            return value.slice(index, index + 4) === '\r\n\r\n' ? 4 : 2;
+        };
+
+        const flushEvent = async () => {
+            if (!dataLines.length) return;
+            const payloadText = dataLines.join('\n');
+            dataLines = [];
+
+            let payload;
+            try {
+                payload = JSON.parse(payloadText);
+            } catch (error) {
+                payload = { raw: payloadText };
+            }
+
+            if (eventName === 'start' && handlers.onStart) {
+                await handlers.onStart(payload);
+            } else if (eventName === 'delta' && handlers.onDelta) {
+                await handlers.onDelta(payload);
+            } else if (eventName === 'done' && handlers.onDone) {
+                await handlers.onDone(payload);
+            } else if (eventName === 'error') {
+                if (handlers.onError) {
+                    await handlers.onError(payload);
+                } else {
+                    throw new Error(payload.error || 'Streaming request failed');
+                }
+            }
+
+            eventName = 'message';
+        };
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                buffer += decoder.decode();
+                await flushEvent();
+                break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            let boundaryIndex = findBoundary(buffer);
+
+            while (boundaryIndex !== -1) {
+                const block = buffer.slice(0, boundaryIndex);
+                buffer = buffer.slice(boundaryIndex + getBoundaryLength(buffer, boundaryIndex));
+
+                const lines = block
+                    .split(/\r?\n/)
+                    .filter(Boolean);
+
+                for (const line of lines) {
+                    if (line.startsWith('event:')) {
+                        eventName = line.slice(6).trim();
+                    } else if (line.startsWith('data:')) {
+                        dataLines.push(line.slice(5).trim());
+                    }
+                }
+
+                await flushEvent();
+                boundaryIndex = findBoundary(buffer);
+            }
+        }
     }
 
     const getResultsList = async function (url) {
@@ -419,6 +539,10 @@ const api = (function () {
         getSuggestions,
         getZoteroStatus,
         importWorksToZotero,
+        lookupJournalRanking,
+        generateLiteratureBrief,
+        testLiteratureBrief,
+        streamLiteratureBrief,
         post,
         getAutocomplete,
         makeUrl,

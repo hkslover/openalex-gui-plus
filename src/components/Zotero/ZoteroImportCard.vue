@@ -153,6 +153,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 
 import { api } from '@/api';
+import { loadJournalRankingSettings } from '@/journalRanking/config';
 import { loadZoteroSettings, saveZoteroSettings } from '@/zotero/config';
 
 defineOptions({ name: 'ZoteroImportCard' });
@@ -175,6 +176,7 @@ const emit = defineEmits([
 ]);
 
 const store = useStore();
+const downloadPdfEnabled = computed(() => loadZoteroSettings().downloadPdf !== false);
 
 const statusLoading = ref(false);
 const importing = ref(false);
@@ -187,11 +189,21 @@ const targetId = ref(loadZoteroSettings().targetId);
 const selectedCount = computed(() => props.selectedWorks.length);
 const oaSelectedCount = computed(() => props.selectedWorks.filter((work) => work.isOa).length);
 const selectedPreview = computed(() => props.selectedWorks.slice(0, 4));
-const canImport = computed(() => selectedCount.value > 0 && status.value?.client?.running && !importing.value);
+const hasValidTarget = computed(() => !downloadPdfEnabled.value || availableTargets.value.length > 0);
+const canImport = computed(() => (
+  selectedCount.value > 0 &&
+  status.value?.client?.running &&
+  hasValidTarget.value &&
+  !importing.value
+));
 
 const availableTargets = computed(() => {
   const targets = Array.isArray(status.value?.library?.targets) ? status.value.library.targets : [];
-  return targets.map((target) => ({
+  const filteredTargets = downloadPdfEnabled.value
+    ? targets.filter((target) => target.filesEditable)
+    : targets;
+
+  return filteredTargets.map((target) => ({
     id: target.id,
     label: `${'— '.repeat(target.level || 0)}${target.name}`,
     filesEditable: target.filesEditable,
@@ -238,6 +250,9 @@ const statusHeadline = computed(() => {
 const statusDescription = computed(() => {
   if (statusLoading.value) {
     return 'Trying to reach the local Zotero connector and fetch editable targets.';
+  }
+  if (status.value?.client?.running && !hasValidTarget.value) {
+    return 'No Zotero library or collection with file editing is currently available for PDF import.';
   }
   return statusError.value || 'Start Zotero Desktop and make sure the local connector server is available.';
 });
@@ -300,6 +315,7 @@ async function importSelected() {
       props.selectedWorks.map((work) => work.id),
       {
         ...loadZoteroSettings(),
+        journalRanking: loadJournalRankingSettings(),
         targetId: targetId.value,
       },
     );

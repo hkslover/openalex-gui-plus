@@ -18,7 +18,11 @@
     </div>
 
     <v-toolbar flat dense class="mt-4" style="margin-left: -20px;" color="transparent">
-      <work-linkouts v-if="myEntityType === 'works'" :data="entityData"/>
+      <work-linkouts
+        v-if="myEntityType === 'works'"
+        :data="entityData"
+        :literature-brief-state="literatureBriefState"
+      />
       <location-linkouts v-else-if="myEntityType === 'locations'" :data="entityData"/>
       <v-btn
         v-else
@@ -80,11 +84,24 @@
         Send feedback
       </v-tooltip>
     </v-toolbar>
+
+    <entity-journal-ranking-card
+      v-if="myEntityType === 'works'"
+      :entity-data="entityData"
+      :entity-type="myEntityType"
+    />
+
+    <entity-literature-brief-card
+      v-if="myEntityType === 'works'"
+      :entity-data="entityData"
+      :entity-type="myEntityType"
+      @state-change="updateLiteratureBriefState"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
 
 import filters from '@/filters';
@@ -94,6 +111,8 @@ import * as openalexId from '@/openalexId';
 import LinkEntityRolesList from '@/components/LinkEntityRolesList.vue';
 import WorkLinkouts from '@/components/WorkLinkouts.vue';
 import LocationLinkouts from '@/components/LocationLinkouts.vue';
+import EntityJournalRankingCard from '@/components/Entity/EntityJournalRankingCard.vue';
+import EntityLiteratureBriefCard from '@/components/Entity/EntityLiteratureBriefCard.vue';
 
 defineOptions({ name: 'EntityHeader' });
 
@@ -104,6 +123,22 @@ const props = defineProps({
 });
 
 const store = useStore();
+const literatureBriefState = ref({
+  enabled: false,
+  configured: false,
+  eligible: false,
+  loading: false,
+  ready: false,
+  content: '',
+  error: '',
+});
+
+function updateLiteratureBriefState(nextState) {
+  literatureBriefState.value = {
+    ...literatureBriefState.value,
+    ...(nextState || {}),
+  };
+}
 
 const id = computed(() => props.entityData?.id);
 const shortId = computed(() => openalexId.getShortId(id.value));
