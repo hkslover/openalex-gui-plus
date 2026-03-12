@@ -138,6 +138,24 @@ function buildTags(work) {
   return Array.from(tags).map((tag) => ({ tag }));
 }
 
+function buildJournalRankingTags(journalRanking) {
+  if (!journalRanking) return [];
+
+  const tags = new Set();
+  if (journalRanking.casLargeCategory?.zone) {
+    tags.add(`ablesci:cas-large:${journalRanking.casLargeCategory.zone}`);
+  }
+  if (journalRanking.jcr?.quartiles?.length) {
+    for (const quartile of journalRanking.jcr.quartiles) {
+      if (quartile) {
+        tags.add(`ablesci:jcr:${quartile}`);
+      }
+    }
+  }
+
+  return Array.from(tags).map((tag) => ({ tag }));
+}
+
 function buildRelations(work) {
   const relations = [];
   if (work?.id) relations.push(work.id);
@@ -147,7 +165,39 @@ function buildRelations(work) {
   return relations.length ? { 'dc:relation': relations } : undefined;
 }
 
-function buildExtra(work) {
+function buildJournalRankingExtra(journalRanking) {
+  if (!journalRanking) return [];
+
+  const lines = [];
+  if (journalRanking.issn) lines.push(`AbleSci ISSN: ${journalRanking.issn}`);
+  if (journalRanking.impactFactor?.value) {
+    lines.push(`AbleSci Impact Factor: ${journalRanking.impactFactor.value}`);
+  }
+  if (journalRanking.casLargeCategory?.zone || journalRanking.casLargeCategory?.name) {
+    lines.push(
+      `AbleSci CAS Large Category: ${[journalRanking.casLargeCategory.zone, journalRanking.casLargeCategory.name]
+        .filter(Boolean)
+        .join(' ')}`,
+    );
+  }
+  if (Array.isArray(journalRanking.casSmallCategories) && journalRanking.casSmallCategories.length) {
+    lines.push(
+      `AbleSci CAS Small Categories: ${journalRanking.casSmallCategories
+        .map((category) => [category.zone, category.name].filter(Boolean).join(' '))
+        .join('; ')}`,
+    );
+  }
+  if (journalRanking.jcr?.summary) {
+    lines.push(`AbleSci JCR Quartile: ${journalRanking.jcr.summary}`);
+  }
+  if (journalRanking.sourceUrl) {
+    lines.push(`AbleSci Source: ${journalRanking.sourceUrl}`);
+  }
+
+  return lines;
+}
+
+function buildExtra(work, journalRanking) {
   const lines = [];
 
   if (work?.id) lines.push(`OpenAlex ID: ${work.id}`);
@@ -165,10 +215,12 @@ function buildExtra(work) {
     }
   }
 
+  lines.push(...buildJournalRankingExtra(journalRanking));
+
   return lines.join('\n');
 }
 
-function buildMetadataNote(work) {
+function buildMetadataNote(work, journalRanking) {
   const summaryLines = [];
   summaryLines.push(`<p><strong>OpenAlex metadata snapshot</strong></p>`);
   summaryLines.push('<p>');
@@ -180,14 +232,36 @@ function buildMetadataNote(work) {
   if (work?.open_access?.oa_url) {
     summaryLines.push(`OA URL: ${escapeHtml(work.open_access.oa_url)}<br>`);
   }
+  if (journalRanking?.impactFactor?.value) {
+    summaryLines.push(`AbleSci IF: ${escapeHtml(journalRanking.impactFactor.value)}<br>`);
+  }
+  if (journalRanking?.casLargeCategory?.zone || journalRanking?.casLargeCategory?.name) {
+    summaryLines.push(
+      `AbleSci CAS: ${escapeHtml(
+        [journalRanking.casLargeCategory.zone, journalRanking.casLargeCategory.name]
+          .filter(Boolean)
+          .join(' '),
+      )}<br>`,
+    );
+  }
+  if (journalRanking?.jcr?.summary) {
+    summaryLines.push(`AbleSci JCR: ${escapeHtml(journalRanking.jcr.summary)}<br>`);
+  }
   summaryLines.push('</p>');
+  if (journalRanking) {
+    summaryLines.push('<p><strong>AbleSci journal ranking</strong></p>');
+    summaryLines.push(
+      `<pre>${escapeHtml(JSON.stringify(journalRanking, null, 2))}</pre>`,
+    );
+  }
   summaryLines.push(
     `<pre>${escapeHtml(JSON.stringify(work, null, 2))}</pre>`,
   );
   return summaryLines.join('');
 }
 
-function mapOpenAlexWorkToZoteroItem(work) {
+function mapOpenAlexWorkToZoteroItem(work, options = {}) {
+  const journalRanking = options.journalRanking || null;
   const source = pickPrimarySource(work);
   const title = work?.title || work?.display_name || 'Untitled';
   const abstractNote =
@@ -201,7 +275,7 @@ function mapOpenAlexWorkToZoteroItem(work) {
     creators: buildCreators(work),
     abstractNote,
     date: work?.publication_date || String(work?.publication_year || ''),
-    tags: buildTags(work),
+    tags: [...buildTags(work), ...buildJournalRankingTags(journalRanking)],
     relations: buildRelations(work),
     url: work?.doi || work?.id || '',
     accessDate: new Date().toISOString(),
@@ -213,7 +287,7 @@ function mapOpenAlexWorkToZoteroItem(work) {
     publisher: pickPublisher(work),
     volume: work?.biblio?.volume || '',
     issue: work?.biblio?.issue || '',
-    extra: buildExtra(work),
+    extra: buildExtra(work, journalRanking),
   };
 
   for (const [key, value] of Object.entries(item)) {

@@ -189,7 +189,7 @@ async function attachPdfViaConnector(config, sessionID, parentConnectorItemID, p
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      return await connectorRequest(config.endpoint, '/connector/saveAttachment', {
+      const response = await connectorRequest(config.endpoint, '/connector/saveAttachment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/pdf',
@@ -204,6 +204,13 @@ async function attachPdfViaConnector(config, sessionID, parentConnectorItemID, p
         data: buffer,
         timeout: 120000,
       });
+
+      const responseText = typeof response.raw === 'string' ? response.raw.trim() : '';
+      if (/files are not editable/i.test(responseText)) {
+        throw new Error(responseText);
+      }
+
+      return response;
     } catch (error) {
       lastError = error;
       if (attempt < 2) {

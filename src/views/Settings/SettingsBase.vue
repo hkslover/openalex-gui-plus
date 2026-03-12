@@ -131,6 +131,8 @@ const myStuffItems = computed(() => {
   const items = [
     { title: 'API key', route: '/settings/api-key', icon: 'mdi-key-outline' },
     { title: 'Zotero', route: '/settings/zotero', icon: 'mdi-bookshelf' },
+    { title: 'Journal ranking', route: '/settings/journal-ranking', icon: 'mdi-chart-box-outline' },
+    { title: 'Literature brief', route: '/settings/literature-brief', icon: 'mdi-text-box-search-outline' },
     { title: 'Saved searches', route: '/settings/searches', icon: 'mdi-star-outline' },
     { title: 'Exports', route: '/settings/exports', icon: 'mdi-download-outline' },
   ];

@@ -39,6 +39,8 @@ import SettingsOrgUsage from "@/views/Settings/SettingsOrgUsage.vue";
 import SettingsOrgMembers from "@/views/Settings/SettingsOrgMembers.vue";
 import SettingsAffiliations from "@/views/Settings/SettingsAffiliations.vue";
 import SettingsZotero from "@/views/Settings/SettingsZotero.vue";
+import SettingsJournalRanking from "@/views/Settings/SettingsJournalRanking.vue";
+import SettingsLiteratureBrief from "@/views/Settings/SettingsLiteratureBrief.vue";
 
 import SettingsSiteAffiliations from "@/views/Settings/SettingsSiteAffiliations.vue";
 
@@ -200,6 +202,16 @@ const routes = [
                 path: 'zotero',
                 name: 'settings-zotero',
                 component: SettingsZotero,
+            },
+            {
+                path: 'journal-ranking',
+                name: 'settings-journal-ranking',
+                component: SettingsJournalRanking,
+            },
+            {
+                path: 'literature-brief',
+                name: 'settings-literature-brief',
+                component: SettingsLiteratureBrief,
             },
             {
                 path: 'api',
