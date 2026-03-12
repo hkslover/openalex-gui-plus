@@ -8,6 +8,9 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
+    "start:local": "node server/local-app.js",
+    "start:prod": "node server.js",
+    "package:local": "npm run build && node scripts/package-local-sea.mjs",
     "lint": "vue-cli-service lint",
     "test": "vitest",
     "test:run": "vitest run",

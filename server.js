@@ -1,9 +1,9 @@
 const express = require('express');
 const path = require('path');
 const compression = require('compression');
-const serveStatic = require('serve-static');
 const sslRedirect = require('heroku-ssl-redirect');
 const { mountBackendRoutes } = require('./server/backend');
+const { mountFrontend } = require('./server/frontend');
 
 let app = express();
 
@@ -34,11 +34,9 @@ app.use(function (req, res, next) {
 
 // this was helpful for configs:
 // https://scotch.io/tutorials/creating-a-single-page-todo-app-with-node-and-angular
-app.use(serveStatic(__dirname + "/dist"));
-
-app.get('*', function (req, res) {
-
-    res.sendFile(__dirname + '/dist/index.html');
+mountFrontend(app, {
+    distDir: path.join(__dirname, 'dist'),
+    preferSeaAssets: false,
 });
 
 const port = process.env.PORT || 5000;

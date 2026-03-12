@@ -10,17 +10,21 @@
 
       <v-list nav density="compact" class="bg-transparent pa-0">
         <!-- My Settings Section -->
-        <div class="sidebar-section-header">My Settings</div>
-        <v-list-item
-          v-for="item in mySettingsItems"
-          :key="item.route"
-          :to="item.route"
-          :prepend-icon="item.icon"
-          :title="item.title"
-        />
+        <template v-if="mySettingsItems.length">
+          <div class="sidebar-section-header">My Settings</div>
+          <v-list-item
+            v-for="item in mySettingsItems"
+            :key="item.route"
+            :to="item.route"
+            :prepend-icon="item.icon"
+            :title="item.title"
+          />
+        </template>
 
         <!-- My Stuff Section -->
-        <div class="sidebar-section-header">My Stuff</div>
+        <div class="sidebar-section-header">
+          {{ isLoggedIn ? 'My Stuff' : 'Local Plugins' }}
+        </div>
         <v-list-item
           v-for="item in myStuffItems"
           :key="item.route"
@@ -98,6 +102,7 @@ defineOptions({ name: 'SettingsBase' });
 const store = useStore();
 const route = useRoute();
 const router = useRouter();
+const isLoggedIn = computed(() => !!store.getters['user/userId']);
 
 // Purchase success handling
 const showPurchaseDialog = ref(false);
@@ -122,21 +127,30 @@ const hasOrganization = computed(() => !!organizationId.value);
 const isOrgOwner = computed(() => organizationRole.value === 'owner');
 const isCuratorOrOwner = computed(() => ['owner', 'curator'].includes(organizationRole.value));
 const hasSiteWideAccess = computed(() => store.getters['user/hasSiteWideAccess']);
-const mySettingsItems = [
-  { title: 'General', route: '/settings/profile', icon: 'mdi-account-outline' },
-  { title: 'Usage', route: '/settings/usage', icon: 'mdi-chart-bar' },
-];
+const mySettingsItems = computed(() => {
+  if (!isLoggedIn.value) return [];
+  return [
+    { title: 'General', route: '/settings/profile', icon: 'mdi-account-outline' },
+    { title: 'Usage', route: '/settings/usage', icon: 'mdi-chart-bar' },
+  ];
+});
 
 const myStuffItems = computed(() => {
   const items = [
-    { title: 'API key', route: '/settings/api-key', icon: 'mdi-key-outline' },
     { title: 'Zotero', route: '/settings/zotero', icon: 'mdi-bookshelf' },
     { title: 'Journal ranking', route: '/settings/journal-ranking', icon: 'mdi-chart-box-outline' },
     { title: 'Literature brief', route: '/settings/literature-brief', icon: 'mdi-text-box-search-outline' },
-    { title: 'Saved searches', route: '/settings/searches', icon: 'mdi-star-outline' },
-    { title: 'Exports', route: '/settings/exports', icon: 'mdi-download-outline' },
   ];
-  items.splice(2, 0, { title: 'Alerts', route: '/settings/alerts', icon: 'mdi-bell-outline' });
+
+  if (isLoggedIn.value) {
+    items.unshift({ title: 'API key', route: '/settings/api-key', icon: 'mdi-key-outline' });
+    items.splice(3, 0, { title: 'Alerts', route: '/settings/alerts', icon: 'mdi-bell-outline' });
+    items.push(
+      { title: 'Saved searches', route: '/settings/searches', icon: 'mdi-star-outline' },
+      { title: 'Exports', route: '/settings/exports', icon: 'mdi-download-outline' },
+    );
+  }
+
   return items;
 });
 

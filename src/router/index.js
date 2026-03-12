@@ -172,22 +172,27 @@ const routes = [
     {
         path: '/settings',
         component: SettingsBase,
-        meta: {requiresAuth: true},
         children: [
             {
                 path: '',
                 name: 'settings-home',
-                redirect: '/settings/profile',
+                redirect: () => (
+                    store.getters['user/userId']
+                        ? '/settings/profile'
+                        : '/settings/zotero'
+                ),
             },
             {
                 path: 'profile',
                 name: 'settings-profile',
                 component: MeAbout,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'usage',
                 name: 'settings-usage',
                 component: MePlan,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'plan',
@@ -197,6 +202,7 @@ const routes = [
                 path: 'api-key',
                 name: 'settings-api-key',
                 component: MeApiKey,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'zotero',
@@ -221,32 +227,38 @@ const routes = [
                 path: 'searches',
                 name: 'settings-searches',
                 component: MeSearches,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'alerts',
                 name: 'settings-alerts',
                 component: MeAlerts,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'exports',
                 name: 'settings-exports',
                 component: MeExports,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'edits',
                 name: 'settings-edits',
                 component: MeEdits,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'curations',
                 name: 'settings-curations',
                 component: AdminCurations,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'curations/:curationId',
                 name: 'settings-curation-detail',
                 component: () => import('@/views/Admin/AdminCurationDetail.vue'),
                 props: true,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'tags',
@@ -256,12 +268,13 @@ const routes = [
                 path: 'org-profile',
                 name: 'settings-org-profile',
                 component: SettingsOrgProfile,
+                meta: { requiresAuth: true },
             },
             {
                 path: 'org-api',
                 name: 'settings-org-api',
                 component: SettingsOrgUsage,
-                meta: { requiresOrgOwner: true },
+                meta: { requiresAuth: true, requiresOrgOwner: true },
             },
             {
                 path: 'org-usage',
@@ -271,38 +284,38 @@ const routes = [
                 path: 'org-plan',
                 name: 'settings-org-plan',
                 component: SettingsOrgPlan,
-                meta: { requiresOrgOwner: true },
+                meta: { requiresAuth: true, requiresOrgOwner: true },
             },
             {
                 path: 'org-members',
                 name: 'settings-org-members',
                 component: SettingsOrgMembers,
-                meta: { requiresOrgOwner: true },
+                meta: { requiresAuth: true, requiresOrgOwner: true },
             },
             {
                 path: 'affiliations',
                 name: 'settings-affiliations',
                 component: SettingsAffiliations,
-                meta: { requiresOrgCuratorOrOwner: true },
+                meta: { requiresAuth: true, requiresOrgCuratorOrOwner: true },
             },
             {
                 path: 'site-affiliations',
                 name: 'settings-site-affiliations',
                 component: SettingsSiteAffiliations,
-                meta: { requiresSiteWideAccess: true },
+                meta: { requiresAuth: true, requiresSiteWideAccess: true },
             },
             {
                 path: 'site-curations',
                 name: 'settings-site-curations',
                 component: AdminCurations,
-                meta: { requiresSiteWideAccess: true },
+                meta: { requiresAuth: true, requiresSiteWideAccess: true },
             },
             {
                 path: 'site-curations/:curationId',
                 name: 'settings-site-curation-detail',
                 component: () => import('@/views/Admin/AdminCurationDetail.vue'),
                 props: true,
-                meta: { requiresSiteWideAccess: true },
+                meta: { requiresAuth: true, requiresSiteWideAccess: true },
             },
         ]
     },
