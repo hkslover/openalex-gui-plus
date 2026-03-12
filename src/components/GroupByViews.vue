@@ -43,7 +43,20 @@
     </v-toolbar>
     
     <v-container class="pt-0">
-      <v-row v-if="resultsObject?.meta?.count" dense class="">
+      <v-row v-if="hasCardsToShow" dense class="">
+        <v-col
+          v-if="showZoteroCard"
+          class="d-flex flex-column"
+        >
+          <zotero-import-card
+            :selected-works="zoteroSelectedWorks"
+            :visible-works="zoteroVisibleWorks"
+            @select-all-visible="$emit('select-all-visible')"
+            @clear-selection="$emit('clear-selection')"
+            @remove-imported="$emit('remove-imported', $event)"
+          />
+        </v-col>
+
         <v-col
             v-for="(key, i) in groupByKeys"
             :key="key"
@@ -118,16 +131,32 @@ import { filtersFromUrlStr } from '@/filterConfigs';
 import GroupBy from '@/components/GroupBy/GroupBy.vue';
 import ActionMenu from '@/components/Action/ActionMenu.vue';
 import SerpResultsCount from '@/components/SerpResultsCount.vue';
+import ZoteroImportCard from '@/components/Zotero/ZoteroImportCard.vue';
 
 defineOptions({ name: 'GroupByViews'});
 
 // Props
-defineProps({
+const props = defineProps({
   resultsObject: Object,
   hideToolbar: Boolean,
   hideResultsCount: Boolean,
   hideMore: Boolean,
+  showZoteroCard: Boolean,
+  zoteroSelectedWorks: {
+    type: Array,
+    default: () => [],
+  },
+  zoteroVisibleWorks: {
+    type: Array,
+    default: () => [],
+  },
 });
+
+defineEmits([
+  'clear-selection',
+  'remove-imported',
+  'select-all-visible',
+]);
 
 // Store and router
 const store = useStore();
@@ -140,6 +169,10 @@ const groupByKeys = computed(() => {
   const keys = url.getGroupBy(route);
   keys.sort((a) => ['apc_sum', 'cited_by_count_sum'].includes(a) ? -1 : 1);
   return keys;
+});
+
+const hasCardsToShow = computed(() => {
+  return !!props.showZoteroCard || !!props.resultsObject?.meta?.count;
 });
 
 

@@ -3,6 +3,7 @@ const path = require('path');
 const compression = require('compression');
 const serveStatic = require('serve-static');
 const sslRedirect = require('heroku-ssl-redirect');
+const { mountBackendRoutes } = require('./server/backend');
 
 let app = express();
 
@@ -11,6 +12,8 @@ app.use(sslRedirect(['production'], 301));
 
 // compress responses
 app.use(compression());
+
+mountBackendRoutes(app);
 
 // redirect alpha.openalex.org to openalex.org
 app.use(function (req, res, next) {

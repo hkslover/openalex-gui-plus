@@ -1,15 +1,95 @@
 <template>
-  <div class="result-item">
-    <!-- Row 1: title + right column -->
-    <div class="result-row-1">
-      <router-link
-        :to="filters.entityZoomLink(result.id)"
-        class="result-title text-body-1 font-weight-medium text-decoration-none"
-        v-html="filters.prettyTitle(displayTitle)"
+  <div class="result-item" :class="{ 'result-item--selectable': selectable, 'result-item--selected': selected }">
+    <div v-if="selectable" class="result-select">
+      <v-checkbox-btn
+        :model-value="selected"
+        color="primary"
+        density="compact"
+        hide-details
+        @click.stop
+        @update:model-value="emitToggle"
       />
-      <!-- Works: right column is PDF button -->
-      <span v-if="isWorks && !smAndDown" class="pdf-slot">
-        <v-tooltip v-if="result.best_oa_location?.pdf_url" location="top" aria-label="Download PDF">
+    </div>
+
+    <div class="result-main">
+      <!-- Row 1: title + right column -->
+      <div class="result-row-1">
+        <router-link
+          :to="filters.entityZoomLink(result.id)"
+          class="result-title text-body-1 font-weight-medium text-decoration-none"
+          v-html="filters.prettyTitle(displayTitle)"
+        />
+        <!-- Works: right column is PDF button -->
+        <span v-if="isWorks && !smAndDown" class="pdf-slot">
+          <v-tooltip v-if="result.best_oa_location?.pdf_url" location="top" aria-label="Download PDF">
+            <template v-slot:activator="{ props: tooltipProps }">
+              <v-btn
+                v-bind="tooltipProps"
+                :href="result.best_oa_location.pdf_url"
+                target="_blank"
+                rel="noopener"
+                variant="outlined"
+                size="x-small"
+                color="primary"
+                class="pdf-btn"
+                @click.stop
+              >
+                PDF
+              </v-btn>
+            </template>
+            {{ pdfHostname }}
+          </v-tooltip>
+        </span>
+        <!-- Non-works: right column is works count -->
+        <div v-if="!isWorks && countValue && !smAndDown" class="result-stats">
+          <v-icon size="14" class="count-icon">mdi-file-document-outline</v-icon>
+          <span class="text-body-2">{{ countValue.toLocaleString() }}</span>
+        </div>
+      </div>
+
+      <!-- Row 2: entity-specific metadata -->
+      <div class="result-meta mt-1" v-if="hasMetadata">
+        <template v-if="isWorks">
+          <span v-if="result.publication_year">{{ result.publication_year }}</span>
+          <template v-if="result.authorships?.length">
+            <span> · </span>
+            <work-authors-string :authorships="result.authorships" />
+          </template>
+          <template v-if="result.primary_location?.source?.display_name">
+            <span> · </span>
+            <span class="font-italic">{{ result.primary_location.source.display_name }}</span>
+          </template>
+          <template v-if="result.cited_by_count">
+            <span> · </span>
+            <v-tooltip location="top" aria-label="Citation count">
+              <template v-slot:activator="{ props: citeTipProps }">
+                <span v-bind="citeTipProps" class="cited-by" @click.stop="viewCitingPapers">
+                  <v-icon size="14" class="count-icon">mdi-format-quote-close</v-icon>
+                  {{ result.cited_by_count.toLocaleString() }}
+                </span>
+              </template>
+              cited by {{ result.cited_by_count.toLocaleString() }} works
+            </v-tooltip>
+          </template>
+        </template>
+        <template v-else-if="myEntityType === 'languages'">
+          <span v-if="endonym">{{ endonym }}</span>
+          <span v-if="endonym"> · </span>
+          <v-tooltip location="top">
+            <template #activator="{ props: isoProps }">
+              <span v-bind="isoProps" style="cursor: help;">{{ isoCode }}</span>
+            </template>
+            ISO 639-1 language code
+          </v-tooltip>
+        </template>
+        <template v-else>
+          {{ unworkSubheader }}
+        </template>
+      </div>
+
+      <!-- Row 3 (mobile only): PDF or works count -->
+      <div v-if="isWorks && smAndDown && result.best_oa_location?.pdf_url" class="result-stats result-stats--mobile mt-1">
+        <v-tooltip location="top" aria-label="Download PDF">
           <template v-slot:activator="{ props: tooltipProps }">
             <v-btn
               v-bind="tooltipProps"
@@ -27,78 +107,11 @@
           </template>
           {{ pdfHostname }}
         </v-tooltip>
-      </span>
-      <!-- Non-works: right column is works count -->
-      <div v-if="!isWorks && countValue && !smAndDown" class="result-stats">
+      </div>
+      <div v-if="!isWorks && countValue && smAndDown" class="result-stats result-stats--mobile mt-1">
         <v-icon size="14" class="count-icon">mdi-file-document-outline</v-icon>
         <span class="text-body-2">{{ countValue.toLocaleString() }}</span>
       </div>
-    </div>
-
-    <!-- Row 2: entity-specific metadata -->
-    <div class="result-meta mt-1" v-if="hasMetadata">
-      <template v-if="isWorks">
-        <span v-if="result.publication_year">{{ result.publication_year }}</span>
-        <template v-if="result.authorships?.length">
-          <span> · </span>
-          <work-authors-string :authorships="result.authorships" />
-        </template>
-        <template v-if="result.primary_location?.source?.display_name">
-          <span> · </span>
-          <span class="font-italic">{{ result.primary_location.source.display_name }}</span>
-        </template>
-        <template v-if="result.cited_by_count">
-          <span> · </span>
-          <v-tooltip location="top" aria-label="Citation count">
-            <template v-slot:activator="{ props: citeTipProps }">
-              <span v-bind="citeTipProps" class="cited-by" @click.stop="viewCitingPapers">
-                <v-icon size="14" class="count-icon">mdi-format-quote-close</v-icon>
-                {{ result.cited_by_count.toLocaleString() }}
-              </span>
-            </template>
-            cited by {{ result.cited_by_count.toLocaleString() }} works
-          </v-tooltip>
-        </template>
-      </template>
-      <template v-else-if="myEntityType === 'languages'">
-        <span v-if="endonym">{{ endonym }}</span>
-        <span v-if="endonym"> · </span>
-        <v-tooltip location="top">
-          <template #activator="{ props: isoProps }">
-            <span v-bind="isoProps" style="cursor: help;">{{ isoCode }}</span>
-          </template>
-          ISO 639-1 language code
-        </v-tooltip>
-      </template>
-      <template v-else>
-        {{ unworkSubheader }}
-      </template>
-    </div>
-
-    <!-- Row 3 (mobile only): PDF or works count -->
-    <div v-if="isWorks && smAndDown && result.best_oa_location?.pdf_url" class="result-stats result-stats--mobile mt-1">
-      <v-tooltip location="top" aria-label="Download PDF">
-        <template v-slot:activator="{ props: tooltipProps }">
-          <v-btn
-            v-bind="tooltipProps"
-            :href="result.best_oa_location.pdf_url"
-            target="_blank"
-            rel="noopener"
-            variant="outlined"
-            size="x-small"
-            color="primary"
-            class="pdf-btn"
-            @click.stop
-          >
-            PDF
-          </v-btn>
-        </template>
-        {{ pdfHostname }}
-      </v-tooltip>
-    </div>
-    <div v-if="!isWorks && countValue && smAndDown" class="result-stats result-stats--mobile mt-1">
-      <v-icon size="14" class="count-icon">mdi-file-document-outline</v-icon>
-      <span class="text-body-2">{{ countValue.toLocaleString() }}</span>
     </div>
   </div>
 </template>
@@ -127,7 +140,11 @@ defineOptions({
 const props = defineProps({
   result: Object,
   showIcon: Boolean,
+  selectable: Boolean,
+  selected: Boolean,
 });
+
+const emit = defineEmits(['toggle-select']);
 
 const store = useStore();
 const router = useRouter();
@@ -304,17 +321,40 @@ function viewWorks() {
   const worksFilter = createSimpleFilter('works', filterKey, props.result.id);
   url.pushNewFilters([worksFilter], 'works');
 }
+
+function emitToggle(value) {
+  emit('toggle-select', {
+    result: props.result,
+    selected: value,
+  });
+}
 </script>
 
 
 <style scoped>
 .result-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   padding: 16px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .result-item:last-child {
   border-bottom: none;
+}
+
+.result-item--selected {
+  background: rgba(25, 118, 210, 0.03);
+}
+
+.result-select {
+  padding-top: 2px;
+}
+
+.result-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .result-row-1 {

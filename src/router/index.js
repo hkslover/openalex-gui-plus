@@ -38,6 +38,7 @@ import SettingsOrgPlan from "@/views/Settings/SettingsOrgPlan.vue";
 import SettingsOrgUsage from "@/views/Settings/SettingsOrgUsage.vue";
 import SettingsOrgMembers from "@/views/Settings/SettingsOrgMembers.vue";
 import SettingsAffiliations from "@/views/Settings/SettingsAffiliations.vue";
+import SettingsZotero from "@/views/Settings/SettingsZotero.vue";
 
 import SettingsSiteAffiliations from "@/views/Settings/SettingsSiteAffiliations.vue";
 
@@ -194,6 +195,11 @@ const routes = [
                 path: 'api-key',
                 name: 'settings-api-key',
                 component: MeApiKey,
+            },
+            {
+                path: 'zotero',
+                name: 'settings-zotero',
+                component: SettingsZotero,
             },
             {
                 path: 'api',

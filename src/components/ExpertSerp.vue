@@ -57,6 +57,9 @@
                 v-for="result in resultsObject.results"
                 :key="result.id"
                 :result="result"
+                :selectable="isWorks"
+                :selected="!!selectedWorksById[result.id]"
+                @toggle-select="toggleWorkSelection"
               />
             </div>
 
@@ -82,12 +85,37 @@
         </v-col>
         <v-col cols="6">
           <template v-if="isSemanticSearch">
+            <group-by-views
+              v-if="showDesktopRightPanel"
+              :results-object="resultsObject"
+              hide-toolbar
+              hide-results-count
+              :show-zotero-card="isWorks"
+              :zotero-selected-works="selectedWorks"
+              :zotero-visible-works="visibleWorks"
+              @select-all-visible="selectAllVisibleWorks"
+              @clear-selection="clearSelectedWorks"
+              @remove-imported="removeImportedWorks"
+            />
             <div class="d-flex align-center justify-center text-body-2" style="color: rgba(0,0,0,0.3); margin-top: calc(50vh - 200px);">
               <v-icon size="18" class="mr-2">mdi-information-outline</v-icon>
               Semantic search doesn't support faceting.
             </div>
           </template>
-          <group-by-views v-else-if="url.isViewSet($route, 'report')" :results-object="resultsObject" hide-toolbar hide-results-count />
+          <template v-else>
+            <group-by-views
+              v-if="showDesktopRightPanel"
+              :results-object="resultsObject"
+              hide-toolbar
+              hide-results-count
+              :show-zotero-card="isWorks"
+              :zotero-selected-works="selectedWorks"
+              :zotero-visible-works="visibleWorks"
+              @select-all-visible="selectAllVisibleWorks"
+              @clear-selection="clearSelectedWorks"
+              @remove-imported="removeImportedWorks"
+            />
+          </template>
         </v-col>
       </v-row>
     </template>
@@ -126,7 +154,20 @@
 
       <!-- Mobile: stacked results -->
       <div class="mx-auto" style="max-width: 800px; width: 100%;">
-        <v-card variant="outlined" class="bg-white" style="margin-top: 84px;">
+        <zotero-import-card
+          v-if="isWorks"
+          class="mb-4"
+          :selected-works="selectedWorks"
+          :visible-works="visibleWorks"
+          @select-all-visible="selectAllVisibleWorks"
+          @clear-selection="clearSelectedWorks"
+          @remove-imported="removeImportedWorks"
+        />
+        <v-card
+          variant="outlined"
+          class="bg-white"
+          :style="{ marginTop: isWorks ? '16px' : '84px' }"
+        >
           <!-- Results header -->
           <div class="d-flex align-center mb-1 pa-4 pb-0">
             <div class="text-body-2 text-medium-emphasis flex-grow-1">
@@ -151,6 +192,9 @@
               v-for="result in resultsObject.results"
               :key="result.id"
               :result="result"
+              :selectable="isWorks"
+              :selected="!!selectedWorksById[result.id]"
+              @toggle-select="toggleWorkSelection"
             />
           </div>
           <div
@@ -180,7 +224,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useDisplay } from 'vuetify';
 import { useStore } from 'vuex';
@@ -190,6 +234,7 @@ import filters from '@/filters';
 import { filtersFromUrlStr, filtersAsUrlStr } from '@/filterConfigs';
 import { getFacetConfig } from '@/facetConfigUtils';
 import { entityConfigs } from '@/entityConfigs';
+import * as openalexId from '@/openalexId';
 import { toPrecision } from '@/util';
 import { facetConfigs } from '@/facetConfigs';
 
@@ -216,6 +261,10 @@ const { mdAndUp } = useDisplay();
 
 const isSemanticSearch = computed(() => !!route.query['search.semantic']);
 const entityType = computed(() => store.getters.entityType);
+const isWorks = computed(() => entityType.value === 'works');
+const showDesktopRightPanel = computed(() => {
+  return isWorks.value || (!isSemanticSearch.value && url.isViewSet(route, 'report'));
+});
 const entityDisplayName = computed(() => entityConfigs[entityType.value]?.displayName || entityType.value);
 const resultsCount = computed(() => props.resultsObject?.meta?.count);
 const isCountRounded = computed(() => {
@@ -227,6 +276,41 @@ const hasFiltersAvailable = computed(() => {
   return facetConfigs(entityType.value).some(c => c.actions?.includes('filter'));
 });
 const filterModeSnackbar = ref(false);
+const selectedWorksById = ref({});
+
+const visibleWorks = computed(() => {
+  const results = Array.isArray(props.resultsObject?.results) ? props.resultsObject.results : [];
+  return results
+    .filter((result) => openalexId.getEntityType(result.id) === 'works')
+    .map((result) => ({
+      id: result.id,
+      title: result.display_name || 'Untitled',
+      isOa: !!(
+        result.open_access?.is_oa ||
+        result.best_oa_location?.pdf_url ||
+        result.primary_location?.pdf_url
+      ),
+    }));
+});
+
+const selectedWorks = computed(() => Object.values(selectedWorksById.value));
+
+const selectionScopeKey = computed(() => {
+  const query = { ...route.query };
+  delete query.page;
+
+  const sortedQuery = Object.keys(query)
+    .sort()
+    .reduce((acc, key) => {
+      acc[key] = query[key];
+      return acc;
+    }, {});
+
+  return JSON.stringify({
+    entityType: entityType.value,
+    query: sortedQuery,
+  });
+});
 
 // Filter mode: basic (chips) or advanced (FilterList)
 const filterMode = ref(localStorage.getItem('serp-filter-mode') || 'basic');
@@ -263,6 +347,55 @@ function setFilterMode(newMode) {
   filterMode.value = newMode;
   localStorage.setItem('serp-filter-mode', newMode);
 }
+
+function toggleWorkSelection({ result, selected }) {
+  if (!result?.id || openalexId.getEntityType(result.id) !== 'works') return;
+
+  if (selected) {
+    selectedWorksById.value = {
+      ...selectedWorksById.value,
+      [result.id]: {
+        id: result.id,
+        title: result.display_name || 'Untitled',
+        isOa: !!(
+          result.open_access?.is_oa ||
+          result.best_oa_location?.pdf_url ||
+          result.primary_location?.pdf_url
+        ),
+      },
+    };
+  } else {
+    const next = { ...selectedWorksById.value };
+    delete next[result.id];
+    selectedWorksById.value = next;
+  }
+}
+
+function selectAllVisibleWorks() {
+  const next = { ...selectedWorksById.value };
+  for (const work of visibleWorks.value) {
+    next[work.id] = work;
+  }
+  selectedWorksById.value = next;
+}
+
+function clearSelectedWorks() {
+  selectedWorksById.value = {};
+}
+
+function removeImportedWorks(openalexIds = []) {
+  const next = { ...selectedWorksById.value };
+  for (const id of openalexIds) {
+    delete next[id];
+  }
+  selectedWorksById.value = next;
+}
+
+watch(selectionScopeKey, (nextKey, previousKey) => {
+  if (previousKey && nextKey !== previousKey) {
+    clearSelectedWorks();
+  }
+});
 
 // Pagination
 const numPages = computed(() => {

@@ -104,6 +104,23 @@ const api = (function () {
         return resp;
     }
 
+    const getBackendUrl = function(pathName) {
+        return `/backend${pathName.startsWith('/') ? pathName : `/${pathName}`}`;
+    }
+
+    const getZoteroStatus = async function(settings) {
+        const resp = await axios.post(getBackendUrl('/zotero/status'), { settings });
+        return resp.data;
+    }
+
+    const importWorksToZotero = async function(openalexIds, settings) {
+        const resp = await axios.post(getBackendUrl('/zotero/import'), {
+            openalexIds,
+            settings,
+        });
+        return resp.data;
+    }
+
     const getResultsList = async function (url) {
         const ret = await getUrl(url);
         
@@ -400,6 +417,8 @@ const api = (function () {
         getAutocompleteResponses,
         getGroups,
         getSuggestions,
+        getZoteroStatus,
+        importWorksToZotero,
         post,
         getAutocomplete,
         makeUrl,

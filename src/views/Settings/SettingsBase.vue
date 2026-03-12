@@ -130,6 +130,7 @@ const mySettingsItems = [
 const myStuffItems = computed(() => {
   const items = [
     { title: 'API key', route: '/settings/api-key', icon: 'mdi-key-outline' },
+    { title: 'Zotero', route: '/settings/zotero', icon: 'mdi-bookshelf' },
     { title: 'Saved searches', route: '/settings/searches', icon: 'mdi-star-outline' },
     { title: 'Exports', route: '/settings/exports', icon: 'mdi-download-outline' },
   ];

@@ -1,6 +1,7 @@
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const webpack = require('webpack');
+const { mountBackendRoutes } = require('./server/backend');
 
 module.exports = {
   lintOnSave: false,
@@ -20,5 +21,13 @@ module.exports = {
         __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
       })
     ]
+  },
+  devServer: {
+    setupMiddlewares(middlewares, devServer) {
+      if (devServer?.app) {
+        mountBackendRoutes(devServer.app);
+      }
+      return middlewares;
+    },
   },
 }
