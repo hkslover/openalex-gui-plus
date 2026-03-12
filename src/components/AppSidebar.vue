@@ -62,13 +62,28 @@
 
         <AppSidebarUserMenu v-if="userId" />
 
-        <v-tooltip v-else location="right" text="Log in" aria-label="Log in">
-          <template #activator="{ props }">
-            <router-link to="/login" class="sidebar-icon-link" v-bind="props" aria-label="Log in">
-              <v-icon class="sidebar-login-icon">mdi-login</v-icon>
-            </router-link>
-          </template>
-        </v-tooltip>
+        <template v-else>
+          <v-tooltip location="right" text="Log in" aria-label="Log in">
+            <template #activator="{ props }">
+              <router-link to="/login" class="sidebar-icon-link" v-bind="props" aria-label="Log in">
+                <v-icon class="sidebar-login-icon">mdi-login</v-icon>
+              </router-link>
+            </template>
+          </v-tooltip>
+
+          <v-tooltip location="right" text="Plugin settings" aria-label="Plugin settings">
+            <template #activator="{ props }">
+              <router-link
+                to="/settings/zotero"
+                class="sidebar-icon-link"
+                v-bind="props"
+                aria-label="Plugin settings"
+              >
+                <v-icon class="sidebar-login-icon">mdi-cog-outline</v-icon>
+              </router-link>
+            </template>
+          </v-tooltip>
+        </template>
       </div>
     </div>
   </v-navigation-drawer>

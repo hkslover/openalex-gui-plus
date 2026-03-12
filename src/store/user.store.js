@@ -8,6 +8,11 @@ import * as openalexId from "@/openalexId";
 const shortUuid = require('short-uuid');
 
 const apiBaseUrl = urlBase.userApi
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
+function isLoopbackHost(hostname) {
+    return LOOPBACK_HOSTS.has(String(hostname || '').trim().toLowerCase());
+}
 
 export default {
     namespaced: true,
@@ -181,8 +186,8 @@ export default {
                 email: signupObj.email,
                 display_name: signupObj.displayName,
             }
-            // Add localhost port for local development
-            if (window.location.hostname === 'localhost') {
+            // Add local callback port for local development and packaged local app builds
+            if (isLoopbackHost(window.location.hostname)) {
                 body.localhost = window.location.port || '8080'
             }
             const resp = await axios.post(
@@ -193,8 +198,8 @@ export default {
         },
         async requestLoginEmail(_, email) {
             const body = { email }
-            // Add localhost port for local development
-            if (window.location.hostname === 'localhost') {
+            // Add local callback port for local development and packaged local app builds
+            if (isLoopbackHost(window.location.hostname)) {
                 body.localhost = window.location.port || '8080'
             }
             const resp = await axios.post(

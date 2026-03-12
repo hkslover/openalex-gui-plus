@@ -2,14 +2,40 @@
   <div class="landing-page">
     <!-- Hero Section -->
     <section class="hero">
+      <div class="hero-kicker">
+        <span class="hero-kicker-dot" />
+        OpenAlex Plus
+      </div>
       <h1 class="hero-headline">
         <!-- The universal research database -->
         All the world's research, connected and open.
       </h1>
       <p class="hero-subhead">
         <!-- Search, filter, analyze, and download the world's scholarly record directly from your agents, scripts, and spreadsheets. Fully open. Nonprofit. -->
-        Inspired by the Library of Alexandria, we catalog 474 million scholarly works, linking them to authors, institutions, funders, and more—all fully open.
+        Inspired by the Library of Alexandria, we catalog 474 million scholarly works, linking them to authors, institutions, funders, and more-all fully open.
       </p>
+      <div class="hero-plus-panel">
+        <div class="hero-plus-copy">
+          <p class="hero-plus-eyebrow">Local workflow upgrade</p>
+          <p class="hero-plus-text">
+            Add Zotero export, journal ranking lookup, and AI literature briefs-right inside your OpenAlex workflow, all running on your own machine.
+          </p>
+        </div>
+        <div class="hero-plus-features">
+          <div class="hero-plus-feature">
+            <v-icon size="18">mdi-bookshelf</v-icon>
+            <span>Push records and OA PDFs to Zotero</span>
+          </div>
+          <div class="hero-plus-feature">
+            <v-icon size="18">mdi-chart-box-outline</v-icon>
+            <span>Check AbleSci journal quartiles by ISSN</span>
+          </div>
+          <div class="hero-plus-feature">
+            <v-icon size="18">mdi-text-box-search-outline</v-icon>
+            <span>Generate fast AI briefs from open abstracts</span>
+          </div>
+        </div>
+      </div>
       <div class="hero-search">
         <search-box show-examples autofocus />
       </div>
@@ -211,6 +237,30 @@ export default {
   margin-right: auto;
 }
 
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 18px;
+  border: 1px solid #D7E4DA;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #F7FBF8 0%, #EEF7F1 100%);
+  color: #21543A;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-kicker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #3AA469;
+  box-shadow: 0 0 0 4px rgba(58, 164, 105, 0.12);
+}
+
 .hero-headline {
   font-size: 56px;
   font-weight: 700;
@@ -228,6 +278,67 @@ export default {
   color: #52525B;
   max-width: 600px;
   margin: 0 0 44px 0;
+}
+
+.hero-plus-panel {
+  width: 100%;
+  max-width: 720px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 20px;
+  margin: 0 0 32px 0;
+  padding: 22px 24px;
+  border: 1px solid #E7ECE8;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(58, 164, 105, 0.10), transparent 36%),
+    linear-gradient(180deg, #FFFFFF 0%, #FAFCFA 100%);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+}
+
+.hero-plus-copy {
+  min-width: 0;
+}
+
+.hero-plus-eyebrow {
+  margin: 0 0 10px 0;
+  color: #21543A;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-plus-text {
+  margin: 0;
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.hero-plus-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hero-plus-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid #E8EEEA;
+  color: #1F2937;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.hero-plus-feature .v-icon {
+  flex-shrink: 0;
+  color: #2E7D57;
 }
 
 .hero-search {
@@ -464,6 +575,10 @@ export default {
     font-size: 17px;
   }
 
+  .hero-plus-panel {
+    grid-template-columns: 1fr;
+  }
+
   .section {
     padding: 80px 20px;
   }
@@ -496,6 +611,24 @@ export default {
   .hero-subhead {
     font-size: 16px;
     max-width: 100%;
+  }
+
+  .hero-kicker {
+    margin-bottom: 16px;
+  }
+
+  .hero-plus-panel {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .hero-plus-text {
+    font-size: 14px;
+  }
+
+  .hero-plus-feature {
+    padding: 11px 12px;
+    font-size: 13px;
   }
 
   .section {
